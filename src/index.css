@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* 1. ลงทะเบียนตัวแปรสีทั้งหมดของ FFVIII ให้ Tailwind v4 รู้จัก */
+@theme {
+  --color-ff8-dark: #1a1a1a;
+  --color-ff8-blue: #001a4d;
+  --color-ff8-cyan: #00ffff;
+  --color-ff8-accent: #0066ff;
+  --color-ff8-green: #00cc00;
+  --color-ff8-red: #ff0000;
+}
+
+/* 2. ประกาศสไตล์คัสตอมในระบบ v4 (ใช้สแลชธรรมดา ไม่ต้องใช้ @layer แล้ว) */
+.ff8-card {
+  @apply border-2 border-ff8-cyan bg-ff8-blue p-4 rounded-none;
+}
+
+.ff8-button {
+  @apply px-4 py-2 border-2 border-ff8-cyan text-ff8-cyan uppercase font-bold;
+  @apply hover:bg-ff8-cyan hover:text-ff8-dark transition-all;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.ff8-input {
+  @apply bg-ff8-dark border-2 border-ff8-cyan text-white px-3 py-2;
+  @apply focus:outline-none focus:border-ff8-accent;
+}
+
+.ff8-title {
+  @apply text-ff8-cyan text-3xl font-bold uppercase;
+}
+
+/* 3. สไตล์พื้นฐานของหน้าเว็บ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #1a1a1a;
+  color: white;
+  font-family: Arial, sans-serif;
+}
