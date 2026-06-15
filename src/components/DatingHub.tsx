@@ -89,17 +89,67 @@ export const DatingHub: React.FC<DatingHubProps> = ({ gil, characters, onUpdateS
     <div className="min-h-screen bg-ff8-dark p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="ff8-card mb-6 text-center"
-        >
-          <h1 className="ff8-title mb-2">💖 SeeD Hearts: โหมดสานสัมพันธ์</h1>
-          <p className="text-ff8-cyan">แสดงความรักของคุณด้วยของขวัญ</p>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700', marginTop: '10px' }}>
-            💰 เงินคงเหลือ: {gil} Gil
-          </div>
-        </motion.div>
+        // Enhanced character profile section
+<motion.div
+  initial={{ scale: 0.9, opacity: 0 }}
+  animate={{ scale: 1, opacity: 1 }}
+  className="ff8-card mb-6 overflow-hidden"
+>
+  <div className="relative mb-4">
+    {/* Character Portrait */}
+    
+<motion.img
+  src={selectedChar.avatar}
+  alt={selectedChar.name}
+  className="w-24 h-24 rounded border-2 border-ff8-cyan object-cover"
+  whileHover={{ scale: 1.1 }}
+  onError={e => {
+    console.error('Image failed to load:', selectedChar.avatar);
+    (e.target as HTMLImageElement).src =
+      'https://via.placeholder.com/400x500?text=' + selectedChar.name
+  }}
+/>
+
+    {/* Overlay with character info */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent rounded flex flex-col justify-end p-4">
+      <h2 className="ff8-title text-2xl">{selectedChar.name}</h2>
+      <p className="text-ff8-cyan">{selectedChar.title}</p>
+    </div>
+  </div>
+
+  {/* Character Stats */}
+  <div className="grid grid-cols-2 gap-3 mb-4">
+    <div className="bg-ff8-dark p-3 rounded border border-ff8-cyan">
+      <div className="text-ff8-cyan text-xs">ความสัมพันธ์</div>
+      <div className="text-white font-bold text-lg">
+        {getTierLabel(selectedChar.relationshipTier)}
+      </div>
+    </div>
+    <div className="bg-ff8-dark p-3 rounded border border-ff8-cyan">
+      <div className="text-ff8-cyan text-xs">ความสนิทสนม</div>
+      <div className="text-white font-bold text-lg">
+        {selectedChar.affinity}%
+      </div>
+    </div>
+  </div>
+
+  {/* Description */}
+  <p className="text-white text-sm leading-relaxed mb-3">
+    {selectedChar.description}
+  </p>
+
+  {/* Personality Tags */}
+  <div className="flex flex-wrap gap-2">
+    {selectedChar.personality.map(trait => (
+      <span
+        key={trait}
+        className="px-2 py-1 bg-ff8-blue border border-ff8-cyan text-ff8-cyan text-xs rounded"
+      >
+        {trait}
+      </span>
+    ))}
+  </div>
+</motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Character List */}
