@@ -1,17 +1,18 @@
+// src/App.tsx
 import React, { useState } from 'react';
 import { initialCharacters } from './data/waifuData';
-import type { WaifuCharacter } from './types/mission';
+import type { EnhancedWaifuCharacter } from './types/mission';
 import { DatingHub } from './components/DatingHub';
 import HomePage from './components/HomePage'; 
 import MissionPage from './components/MissionPage';
 
-// 🎯 แก้จุดนี้: ประกาศตัวแปรรับสเปกอ็อบเจกต์ Character ที่ HomePage ต้องการโดยตรงแทนการดึงแบบ ComponentProps
+// 🎯 แกะพิมพ์เขียวประเภทข้อมูลตัวละครจาก HomePage มาใช้งานตรง ๆ
 type EmbeddedCharacter = React.ComponentProps<typeof HomePage>['character'];
 
 export const App: React.FC = () => {
   // --- 1. State ระบบเงินและจีบสาว ---
   const [gil, setGil] = useState<number>(1000); 
-  const [characters, setCharacters] = useState<WaifuCharacter[]>(initialCharacters);
+  const [characters, setCharacters] = useState<EnhancedWaifuCharacter[]>(initialCharacters);
   
   // โหมดหน้าจอ: 'mission' (หน้าแรก), 'dating' (จีบสาว), 'active_mission' (ตอนทำภารกิจ)
   const [currentView, setCurrentView] = useState<'mission' | 'dating' | 'active_mission'>('mission');
@@ -48,7 +49,7 @@ export const App: React.FC = () => {
     setCurrentView('active_mission'); 
   };
 
-  const handleUpdateDatingState = (nextGil: number, updatedCharacters: WaifuCharacter[]) => {
+  const handleUpdateDatingState = (nextGil: number, updatedCharacters: EnhancedWaifuCharacter[]) => {
     setGil(nextGil);
     setCharacters(updatedCharacters);
   };
@@ -98,7 +99,7 @@ export const App: React.FC = () => {
         </button>
       </nav>
 
-      {/* สวิตช์สลับเลเยอร์การแสดงผลหน้าจอ */}
+      {/* สวิตช์สลับเลเยอร์การแสดงผลหน้าจอตามวิวล่าสุด */}
       {currentView === 'mission' && (
         <HomePage 
           character={character}              // ตัวแปรเดิมของคุณ
@@ -108,12 +109,13 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* 💖 เชื่อมต่อหน้าจอห้องสานสัมพันธ์ตามที่คุณ Marinn ปรับปรุง */}
       {currentView === 'dating' && (
         <DatingHub 
           gil={gil} 
           characters={characters} 
           onUpdateState={handleUpdateDatingState} 
-          onBack={() => setCurrentView('mission')} 
+          onBack={() => setCurrentView('mission')} // กดกลับย้อนมาหน้าแรก SeeD
         />
       )}
 
@@ -132,7 +134,7 @@ export const App: React.FC = () => {
                   const key = char.name.toLowerCase() as 'quistis' | 'selphie' | 'rinoa';
                   const bonus = result.affectionUpdates?.[key] || 0;
                   // สลับมาใช้ฟิลด์ affinity ให้ตรงตามโครงสร้างดั้งเดิมของโปรเจกต์คุณ Marinn
-                return { ...char, affinity: Math.max(0, (char.affinity || 0) + bonus) };
+                  return { ...char, affinity: Math.max(0, (char.affinity || 0) + bonus) };
                 })
               );
             }

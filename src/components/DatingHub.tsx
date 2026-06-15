@@ -1,181 +1,310 @@
 // src/components/DatingHub.tsx
-import React, { useState } from 'react';
-import type { WaifuCharacter, GiftItem } from '../types/mission';
-import { mockGifts } from '../data/waifuData';
-import { buyAndGiveGift, triggerDateEvent } from '../utils/relationshipManager';
+
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import type { EnhancedWaifuCharacter, GiftItem } from '../types/mission'
+import { allGifts } from '../data/waifuData'
+import { buyAndGiveGift, triggerDateEvent, calculateRelationshipTier } from '../utils/relationshipManager'
 
 interface DatingHubProps {
-  gil: number;
-  characters: WaifuCharacter[];
-  onUpdateState: (nextGil: number, updatedCharacters: WaifuCharacter[]) => void;
-  onBack: () => void;
+  gil: number
+  characters: EnhancedWaifuCharacter[]
+  onUpdateState: (nextGil: number, updatedCharacters: EnhancedWaifuCharacter[]) => void
+  onBack: () => void
 }
 
 export const DatingHub: React.FC<DatingHubProps> = ({ gil, characters, onUpdateState, onBack }) => {
-  const [selectedChar, setSelectedChar] = useState<WaifuCharacter>(characters[0]);
-  const [logMessage, setLogMessage] = useState<string>('ยินดีต้อนรับสู่ห้องนั่งเล่น SeeD... วันนี้จะชวนใครคุยดี?');
+  const [selectedChar, setSelectedChar] = useState<EnhancedWaifuCharacter>(characters[0])
+  const [logMessage, setLogMessage] = useState<string>('💖 ยินดีต้อนรับสู่ห้องสานสัมพันธ์ SeeD...')
+  const [showHeartParticles, setShowHeartParticles] = useState(false)
+  const [particleKey, setParticleKey] = useState(0)
 
   const handleGiveGift = (gift: GiftItem) => {
-    const result = buyAndGiveGift(gil, selectedChar, gift);
-    
-    setLogMessage(result.message);
+    const result = buyAndGiveGift(gil, selectedChar, gift)
+
+    setLogMessage(result.message)
 
     if (result.success) {
-      // อัปเดตข้อมูลสาวคนปัจจุบันใน List ตัวละครทั้งหมด
-      const updatedChars = characters.map(c => 
-        c.id === selectedChar.id ? { ...c, affinity: result.nextAffinity } : c
-      );
-      // อัปเดต State กลับไปที่จุดควบคุมหลัก (Parent)
-      onUpdateState(result.nextGil, updatedChars);
-      // อัปเดตหน้าจอตัวที่กำลังเลือกอยู่ด้วย
-      setSelectedChar({ ...selectedChar, affinity: result.nextAffinity });
+      // Trigger heart animation
+      setShowHeartParticles(true)
+      setParticleKey(prev => prev + 1)
+      setTimeout(() => setShowHeartParticles(false), 2000)
+
+      // Update characters
+      const updatedChars = characters.map(c =>
+        c.id === selectedChar.id
+          ? {
+              ...c,
+              affinity: result.nextAffinity,
+              relationshipTier: calculateRelationshipTier(result.nextAffinity),
+            }
+          : c
+      )
+
+      onUpdateState(result.nextGil, updatedChars)
+      setSelectedChar({
+        ...selectedChar,
+        affinity: result.nextAffinity,
+        relationshipTier: calculateRelationshipTier(result.nextAffinity),
+      })
     }
-  };
+  }
 
   const handleGoOnDate = () => {
-    const dateResult = triggerDateEvent(selectedChar);
-    setLogMessage(dateResult.narrative);
-  };
+    const dateResult = triggerDateEvent(selectedChar)
+    if (dateResult.canDate) {
+      setShowHeartParticles(true)
+      setParticleKey(prev => prev + 1)
+    }
+    setLogMessage(dateResult.narrative)
+  }
+
+  const getTierColor = (tier: string) => {
+    const colors: { [key: string]: string } = {
+      stranger: '#999',
+      acquaintance: '#4a90e2',
+      friend: '#28a745',
+      close_friend: '#ff9800',
+      romantic_interest: '#f44336',
+      in_love: '#e91e63',
+      married: '#c2185b',
+    }
+    return colors[tier] || '#999'
+  }
+
+  const getTierLabel = (tier: string) => {
+    const labels: { [key: string]: string } = {
+      stranger: '👤 คนแปลกหน้า',
+      acquaintance: '😊 คุ้นเคย',
+      friend: '💚 เพื่อน',
+      close_friend: '💛 เพื่อนสนิท',
+      romantic_interest: '💓 มีความหมายพิเศษ',
+      in_love: '💖 รักเข้าแล้ว',
+      married: '💕 สมรส',
+    }
+    return labels[tier] || 'Unknown'
+  }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #333', paddingBottom: '10px', marginBottom: '20px' }}>
-        <h2>💖 SeeD Hearts: โหมดสานสัมพันธ์</h2>
-        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700' }}>💰 เงินคงเหลือ: {gil} Gil</div>
-      </div>
+    <div className="min-h-screen bg-ff8-dark p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="ff8-card mb-6 text-center"
+        >
+          <h1 className="ff8-title mb-2">💖 SeeD Hearts: โหมดสานสัมพันธ์</h1>
+          <p className="text-ff8-cyan">แสดงความรักของคุณด้วยของขวัญ</p>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700', marginTop: '10px' }}>
+            💰 เงินคงเหลือ: {gil} Gil
+          </div>
+        </motion.div>
 
-      {/* Main Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
-        
-        {/* ฝั่งซ้าย: รายชื่อสาว ๆ */}
-        <div style={{ borderRight: '1px solid #ddd', paddingRight: '15px' }}>
-          <h3>รายชื่อตัวละคร</h3>
-          {characters.map(char => (
-            <button
-              key={char.id}
-              onClick={() => {
-                setSelectedChar(char);
-                setLogMessage(`คุณเดินเข้าไปทักทาย ${char.name}`);
-              }}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '12px',
-                marginBottom: '10px',
-                backgroundColor: selectedChar.id === char.id ? '#4a90e2' : '#f5f5f5',
-                color: selectedChar.id === char.id ? 'white' : 'black',
-                border: '1px solid #ccc',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontWeight: selectedChar.id === char.id ? 'bold' : 'normal'
-              }}
-            >
-              {char.name} (💕 {char.affinity}/{char.maxAffinity})
-            </button>
-          ))}
-          
-          <button 
-            onClick={onBack}
-            style={{ width: '100%', marginTop: '30px', padding: '10px', backgroundColor: '#666', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Character List */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="ff8-card"
           >
-            ⬅️ กลับไปหน้าภารกิจ
-          </button>
-        </div>
+            <h3 className="ff8-title mb-4 text-lg">💕 ตัวละคร</h3>
+            {characters.map(char => (
+              <motion.button
+                key={char.id}
+                onClick={() => setSelectedChar(char)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`w-full p-3 mb-2 rounded text-left transition ${
+                  selectedChar.id === char.id
+                    ? 'bg-ff8-cyan text-ff8-dark'
+                    : 'bg-ff8-blue text-white border border-ff8-cyan'
+                }`}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">{char.name}</span>
+                  <span className="text-sm">{char.affinity}%</span>
+                </div>
+              </motion.button>
+            ))}
 
-        {/* ฝั่งขวา: โปรไฟล์, ร้านค้าของขวัญ และระบบเดท */}
-        <div>
-          {/* ข้อมูลโปรไฟล์แอป */}
-          <div style={{ display: 'flex', gap: '20px', backgroundColor: '#f9f9f9', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-            <img 
-              src={selectedChar.avatar} 
-              alt={selectedChar.name} 
-              style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #4a90e2' }}
-              onError={(e) => {
-                // กันเหนียวฟอลแบ็กถ้ารูปแตก
-                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=SeeD';
-              }}
-            />
-            <div>
-              <h3 style={{ margin: '0 0 5px 0' }}>{selectedChar.name}</h3>
-              <p style={{ margin: '0 0 10px 0', color: '#666', fontStyle: 'italic' }}>{selectedChar.title}</p>
-              <p style={{ margin: '0', fontSize: '14px', color: '#444' }}>{selectedChar.description}</p>
-            </div>
-          </div>
-
-          {/* แถบระดับความสัมพันธ์ */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-              <span>ระดับความสนิทสนม</span>
-              <span>{selectedChar.affinity} / {selectedChar.maxAffinity} แต้ม</span>
-            </div>
-            <div style={{ width: '100%', backgroundColor: '#eee', height: '15px', borderRadius: '10px', overflow: 'hidden' }}>
-              <div style={{ width: `${(selectedChar.affinity / selectedChar.maxAffinity) * 100}%`, backgroundColor: '#ff4d6d', height: '100%', transition: 'width 0.3s ease' }} />
-            </div>
-          </div>
-
-          {/* กล่องข้อความตอบกลับ (Dialogue/Log Log) */}
-          <blockquote style={{ margin: '0 0 20px 0', padding: '15px', backgroundColor: '#eef5fc', borderLeft: '5px solid #4a90e2', borderRadius: '4px', fontStyle: 'italic' }}>
-            {logMessage}
-          </blockquote>
-
-          {/* โซนที่ 1: ร้านค้าและเปย์ของขวัญ */}
-          <div style={{ marginBottom: '25px' }}>
-            <h4>🎁 ซื้อของขวัญให้เธอ</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-              {mockGifts.map(gift => {
-                const isFavorite = selectedChar.favoriteGifts.includes(gift.id);
-                return (
-                  <div key={gift.id} style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '6px', textAlign: 'center', backgroundColor: '#fff' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{gift.name}</div>
-                    <div style={{ fontSize: '12px', color: '#777', minHeight: '32px', margin: '5px 0' }}>{gift.description}</div>
-                    <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>💰 {gift.price} Gil</div>
-                    <button
-                      onClick={() => handleGiveGift(gift)}
-                      style={{
-                        width: '100%',
-                        padding: '6px',
-                        backgroundColor: isFavorite ? '#ff4d6d' : '#28a745',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      {isFavorite ? '💝 ชิ้นโปรด (x2)' : '🎁 มอบให้'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* โซนที่ 2: ปุ่มชวนเดท */}
-          <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
-            <h4>🌹 ปฏิบัติการชวนเดท</h4>
-            <button
-              onClick={handleGoOnDate}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: selectedChar.affinity >= 50 ? '#ff4d6d' : '#ccc',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: selectedChar.affinity >= 50 ? 'pointer' : 'not-allowed',
-                fontWeight: 'bold',
-                fontSize: '16px'
-              }}
+            <motion.button
+              onClick={onBack}
+              whileHover={{ scale: 1.05 }}
+              className="w-full mt-6 ff8-button border-ff8-red"
             >
-              {selectedChar.affinity >= 50 ? '✨ ไปออกเดทด้วยกันที่หอคอยชมวิว ✨' : '🔒 ต้องมีค่าความสัมพันธ์ 50 แต้มขึ้นไปเพื่อปลดล็อกเดท'}
-            </button>
-          </div>
+              ⬅️ กลับภารกิจ
+            </motion.button>
+          </motion.div>
 
+          {/* Main Content */}
+          <motion.div
+            key={selectedChar.id}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-2"
+          >
+            {/* Profile */}
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              className="ff8-card mb-6"
+            >
+              <div className="flex gap-4 mb-4">
+                <motion.img
+                  src={selectedChar.avatar}
+                  alt={selectedChar.name}
+                  className="w-24 h-24 rounded border-2 border-ff8-cyan object-cover"
+                  whileHover={{ scale: 1.1 }}
+                  onError={e => {
+                    (e.target as HTMLImageElement).src =
+                      'https://via.placeholder.com/150?text=SeeD'
+                  }}
+                />
+                <div className="flex-1">
+                  <h2 className="ff8-title mb-1">{selectedChar.name}</h2>
+                  <p className="text-ff8-cyan text-sm">{selectedChar.title}</p>
+                  <p className="text-white text-sm mt-2">{selectedChar.description}</p>
+                </div>
+              </div>
+
+              {/* Relationship Tier Badge */}
+              <motion.div
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="inline-block px-3 py-1 rounded text-white font-bold text-sm"
+                style={{ backgroundColor: getTierColor(selectedChar.relationshipTier) }}
+              >
+                {getTierLabel(selectedChar.relationshipTier)}
+              </motion.div>
+            </motion.div>
+
+            {/* Affinity Bar */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="ff8-card mb-6"
+            >
+              <div className="flex justify-between mb-2 text-sm font-bold">
+                <span>ระดับความสัมพันธ์</span>
+                <span>{selectedChar.affinity} / {selectedChar.maxAffinity}</span>
+              </div>
+              <div className="w-full bg-ff8-dark h-4 rounded overflow-hidden border border-ff8-cyan">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(selectedChar.affinity / selectedChar.maxAffinity) * 100}%` }}
+                  transition={{ duration: 0.8 }}
+                  style={{ background: 'linear-gradient(90deg, #ff4d6d, #ff006e)' }}
+                  className="h-full"
+                />
+              </div>
+            </motion.div>
+
+            {/* Message Log */}
+            <motion.blockquote
+              key={logMessage}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="ff8-card mb-6 border-l-4 border-ff8-cyan p-4 bg-ff8-blue text-white italic"
+            >
+              {logMessage}
+            </motion.blockquote>
+
+            {/* Gift Shop */}
+            <motion.div className="ff8-card mb-6">
+              <h4 className="ff8-title mb-4 text-lg">🎁 ร้านค้าของขวัญ</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {allGifts.map(gift => {
+                  const isFavorite = selectedChar.favoriteGifts.includes(gift.id)
+                  const isBF = selectedChar.bfGifts?.includes(gift.id)
+                  const isLove = selectedChar.loveGifts?.includes(gift.id)
+
+                  let borderColor = 'border-ff8-cyan'
+                  if (isLove) borderColor = 'border-pink-500'
+                  else if (isBF) borderColor = 'border-orange-500'
+                  else if (isFavorite) borderColor = 'border-red-500'
+
+                  return (
+                    <motion.div
+                      key={gift.id}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      className={`ff8-card border-2 ${borderColor} text-center`}
+                    >
+                      <div className="text-sm font-bold mb-1">{gift.name}</div>
+                      <div className="text-xs text-gray-300 mb-2">{gift.description}</div>
+                      <div className="text-yellow-400 font-bold text-sm mb-2">
+                        💰 {gift.price}
+                      </div>
+                      <motion.button
+                        onClick={() => handleGiveGift(gift)}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className={`w-full py-1 px-2 text-xs font-bold rounded transition ${
+                          isLove
+                            ? 'bg-pink-600 text-white'
+                            : isBF
+                              ? 'bg-orange-500 text-white'
+                              : isFavorite
+                                ? 'bg-red-500 text-white'
+                                : 'bg-ff8-cyan text-ff8-dark'
+                        }`}
+                      >
+                        {isLove ? '💝 Love' : isBF ? '💝 BF' : isFavorite ? '💝 Fav' : '🎁 Give'}
+                      </motion.button>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </motion.div>
+
+            {/* Date Button */}
+            <motion.button
+              onClick={handleGoOnDate}
+              whileHover={selectedChar.affinity >= 50 ? { scale: 1.05 } : {}}
+              whileTap={selectedChar.affinity >= 50 ? { scale: 0.95 } : {}}
+              disabled={selectedChar.affinity < 50}
+              className={`w-full py-4 ff8-title rounded text-lg transition ${
+                selectedChar.affinity >= 50
+                  ? 'bg-ff8-accent text-ff8-dark cursor-pointer hover:brightness-110'
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {selectedChar.affinity >= 50
+                ? '✨ ไปออกเดทด้วยกัน ✨'
+                : `🔒 ต้องมี ${50 - Math.floor(selectedChar.affinity)}% เพิ่มเติม`}
+            </motion.button>
+          </motion.div>
         </div>
 
+        {/* Heart Particles Animation */}
+        <AnimatePresence>
+          {showHeartParticles &&
+            Array.from({ length: 8 }).map((_, i) => (
+              <motion.div
+                key={`heart-${particleKey}-${i}`}
+                initial={{
+                  x: window.innerWidth / 2,
+                  y: window.innerHeight / 2,
+                  opacity: 1,
+                  scale: 1,
+                }}
+                animate={{
+                  x: window.innerWidth / 2 + (Math.random() - 0.5) * 300,
+                  y: window.innerHeight / 2 - Math.random() * 300,
+                  opacity: 0,
+                  scale: 0,
+                }}
+                transition={{ duration: 1.5, delay: i * 0.1 }}
+                className="fixed pointer-events-none text-3xl"
+                style={{ zIndex: 9999 }}
+              >
+                💖
+              </motion.div>
+            ))}
+        </AnimatePresence>
       </div>
     </div>
-  );
-};
+  )
+}
+
+export default DatingHub

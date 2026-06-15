@@ -1,4 +1,5 @@
 // 1. นิยามโครงสร้างข้อมูล (Interfaces)
+export class Stats {}
 export interface Character {
   id: string
   name: string
@@ -107,3 +108,4 @@ RESULT  : ${result.isSuccess ? 'CRITICAL SUCCESS / PASSED' : 'ACTION FAILED'}
 `.trim()
   }
 }
+export type CharacterStats = Stats
