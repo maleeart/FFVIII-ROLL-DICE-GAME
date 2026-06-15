@@ -1,5 +1,6 @@
+
 // src/App.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initialCharacters } from './data/waifuData';
 import type { EnhancedWaifuCharacter } from './types/mission';
 import { DatingHub } from './components/DatingHub';
@@ -10,12 +11,41 @@ import MissionPage from './components/MissionPage';
 type EmbeddedCharacter = React.ComponentProps<typeof HomePage>['character'];
 
 export const App: React.FC = () => {
+  
+
+  
+  // สมมติว่านี่คือสเตตัสภารกิจของคุณ (เช็กชื่อตัวแปรจริงในโค้ดของคุณดูอีกทีนะครับ)
+  const [completedMissions, setCompletedMissions] = useState<any[]>([]); 
+
+  // 2. ย้าย useEffect มาไว้ตรงนี้ (ถัดลงมาจากพวก useState)
+  useEffect(() => {
+  try {
+    const savedGame = localStorage.getItem('ffviii_dice_game_save');
+    if (savedGame) {
+      const parsedData = JSON.parse(savedGame);
+      
+      if (parsedData.gil !== undefined) setGil(parsedData.gil);
+      if (parsedData.characters) setCharacters(parsedData.characters);
+      if (parsedData.completedMissions) setCompletedMissions(parsedData.completedMissions);
+      
+      console.log("🎮 โหลดข้อมูลเซฟเกมล่าสุดสำเร็จแล้ว!");
+    }
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการโหลดเซฟเกม:", error);
+  } finally {
+    // 🌟 โดดเข้าทำงานไม่ว่าจะโหลดเจอเซฟหรือไม่ก็ตาม เพื่อบอกว่า "ขั้นตอนเปิดเกมเสร็จแล้วนะ"
+    setIsLoaded(true);
+  }
+}, []);// รันรอบเดียวตอนเปิดเว็บ
+
+  // ... โค้ดส่วนที่เหลือของคุณ
   // --- 1. State ระบบเงินและจีบสาว ---
   const [gil, setGil] = useState<number>(1000); 
   const [characters, setCharacters] = useState<EnhancedWaifuCharacter[]>(initialCharacters);
   
   // โหมดหน้าจอ: 'mission' (หน้าแรก), 'dating' (จีบสาว), 'active_mission' (ตอนทำภารกิจ)
   const [currentView, setCurrentView] = useState<'mission' | 'dating' | 'active_mission'>('mission');
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // --- 2. ข้อมูลสเตตัสตัวละครเต็มพิกัด (ใช้ Type Assertion การันตีความถูกต้องให้กับสเตตัสเริ่มต้น) ---
   const [character, setCharacter] = useState<EmbeddedCharacter>({
@@ -43,7 +73,26 @@ export const App: React.FC = () => {
       drawableSpells: ['Thunder', 'Cure', 'Scan']
     }
   } as EmbeddedCharacter); // ใช้ Type Assertion เคลียร์ปัญหาความเข้ากันไม่ได้ของ Object ตัวม็อก
+// --- ระบบ Auto-Save: บันทึกข้อมูลลงเบราว์เซอร์ทุกครั้งที่ตัวแปรเปลี่ยนค่า ---
+useEffect(() => {
+  // 🌟 จุดสำคัญ: ถ้าเปิดเกมมาแล้วสวิตช์ยังเป็น false (ยังโหลดเซฟเก่าไม่เสร็จ) -> สั่งห้ามเซฟทับเด็ดขาด!
+  if (!isLoaded) return;
 
+  try {
+    if (characters && characters.length > 0) {
+      const gameState = {
+        gil: gil,
+        characters: characters,
+        completedMissions: completedMissions,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem('ffviii_dice_game_save', JSON.stringify(gameState));
+      console.log("💾 บันทึกความคืบหน้าเกมอัตโนมัติเรียบร้อย!");
+    }
+  } catch (error) {
+    console.error("ไม่สามารถเซฟเกมอัตโนมัติได้:", error);
+  }
+}, [gil, characters, completedMissions, isLoaded]); // เติม isLoaded เข้าไปใน dependency // ทุกครั้งที่เงิน Gil, ตัวละคร หรือภารกิจเปลี่ยน... บล็อกนี้จะทำงานทันที!
   // --- 3. ฟังก์ชันและอีเวนต์ควบคุมระบบ ---
   const handleStartMission = () => {
     setCurrentView('active_mission'); 
